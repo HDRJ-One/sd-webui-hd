@@ -64,7 +64,6 @@ def run(command, desc=None, errdesc=None, custom_env=None, live: bool = default_
 
     return (result.stdout or "")
 
-
         message = f"""{errdesc or 'Error running command'}.
 Command: {command}
 Error code: {result.returncode}
