@@ -81,6 +81,23 @@ def run_pip(args, desc=None):
 def check_run_python(code):
     return check_run(f'"{python}" -c "{code}"')
 
+def git_fix_workspace(dir, name):
+    run(f'"{git}" -C "{dir}" fetch --refetch --no-auto-gc', f"Fetching all contents for {name}", f"Couldn't fetch {name}", live=True)
+    run(f'"{git}" -C "{dir}" gc --aggressive --prune=now', f"Pruning {name}", f"Couldn't prune {name}", live=True)
+    return
+
+
+def run_git(dir, name, command, desc=None, errdesc=None, custom_env=None, live: bool = default_command_live, autofix=True):
+    try:
+        return run(f'"{git}" -C "{dir}" {command}', desc=desc, errdesc=errdesc, custom_env=custom_env, live=live)
+    except RuntimeError:
+        if not autofix:
+            raise
+
+    print(f"{errdesc}, attempting autofix...")
+    git_fix_workspace(dir, name)
+
+    return run(f'"{git}" -C "{dir}" {command}', desc=desc, errdesc=errdesc, custom_env=custom_env, live=live)
 
 def git_clone(url, dir, name, commithash=None):
     # TODO clone into temporary dir and move if successful
