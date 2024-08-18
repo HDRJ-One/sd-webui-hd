@@ -110,7 +110,7 @@ def run_git(dir, name, command, desc=None, errdesc=None, custom_env=None, live: 
             raise
 
     print(f"{errdesc}, attempting autofix...")
-    git_fix_workspace(dir, name)
+    #git_fix_workspace(dir, name)
 
     return run(f'"{git}" -C "{dir}" {command}', desc=desc, errdesc=errdesc, custom_env=custom_env, live=live)
 
@@ -130,7 +130,7 @@ def git_clone(url, dir, name, commithash=None):
 
         run_git(dir, name, 'fetch', f"Fetching updates for {name}...", f"Couldn't fetch {name}", autofix=False)
 
-        run_git(dir, name, f'checkout {commithash}', f"Checking out commit for {name} with hash: {commithash}...", f"Couldn't checkout commit {commithash} for {name}", live=True)
+        #run_git(dir, name, f'checkout {commithash}', f"Checking out commit for {name} with hash: {commithash}...", f"Couldn't checkout commit {commithash} for {name}", live=True)
 
         return
 
