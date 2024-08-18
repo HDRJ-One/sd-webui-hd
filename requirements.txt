@@ -1,7 +1,7 @@
 GitPython
 Pillow
 accelerate
-
+basicsr
 blendmodes
 clean-fid
 diskcache
