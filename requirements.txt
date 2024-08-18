@@ -1,7 +1,7 @@
 GitPython
 Pillow
 accelerate
-basicsr
+
 blendmodes
 clean-fid
 diskcache
@@ -26,7 +26,9 @@ resize-right
 safetensors
 scikit-image>=0.19
 tomesd
-torch
+torch==2.0.0
+torchvision==0.15.0
+basicsr==1.2.0
 torchdiffeq
 torchsde
 transformers==4.30.2
