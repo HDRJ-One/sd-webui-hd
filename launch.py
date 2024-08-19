@@ -13,8 +13,7 @@ dir_extensions = "extensions"
 python = sys.executable
 git = os.environ.get('GIT', "git")
 index_url = os.environ.get('INDEX_URL', "")
-# Whether to default to printing command output
-default_command_live = (os.environ.get('WEBUI_LAUNCH_LIVE_OUTPUT') == "1")
+
 
 def extract_arg(args, name):
     return [x for x in args if x != name], name in args
@@ -33,37 +32,23 @@ def extract_opt(args, name):
     return args, is_present, opt
 
 
-def run(command, desc=None, errdesc=None, custom_env=None, live: bool = default_command_live) -> str:
+def run(command, desc=None, errdesc=None, custom_env=None):
     if desc is not None:
         print(desc)
 
-    run_kwargs = {
-        "args": command,
-        "shell": True,
-        "env": os.environ if custom_env is None else custom_env,
-        "encoding": 'utf8',
-        "errors": 'ignore',
-    }
-
-    if not live:
-        run_kwargs["stdout"] = run_kwargs["stderr"] = subprocess.PIPE
-
-    result = subprocess.run(**run_kwargs)
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=os.environ if custom_env is None else custom_env)
 
     if result.returncode != 0:
-        error_bits = [
-            f"{errdesc or 'Error running command'}.",
-            f"Command: {command}",
-            f"Error code: {result.returncode}",
-        ]
-        if result.stdout:
-            error_bits.append(f"stdout: {result.stdout}")
-        if result.stderr:
-            error_bits.append(f"stderr: {result.stderr}")
-        raise RuntimeError("\n".join(error_bits))
 
-    return (result.stdout or "")
+        message = f"""{errdesc or 'Error running command'}.
+Command: {command}
+Error code: {result.returncode}
+stdout: {result.stdout.decode(encoding="utf8", errors="ignore") if len(result.stdout)>0 else '<empty>'}
+stderr: {result.stderr.decode(encoding="utf8", errors="ignore") if len(result.stderr)>0 else '<empty>'}
+"""
+        raise RuntimeError(message)
 
+    return result.stdout.decode(encoding="utf8", errors="ignore")
 
 
 def check_run(command):
@@ -96,23 +81,6 @@ def run_pip(args, desc=None):
 def check_run_python(code):
     return check_run(f'"{python}" -c "{code}"')
 
-def git_fix_workspace(dir, name):
-    run(f'"{git}" -C "{dir}" fetch --refetch --no-auto-gc', f"Fetching all contents for {name}", f"Couldn't fetch {name}", live=True)
-    run(f'"{git}" -C "{dir}" gc --aggressive --prune=now', f"Pruning {name}", f"Couldn't prune {name}", live=True)
-    return
-
-
-def run_git(dir, name, command, desc=None, errdesc=None, custom_env=None, live: bool = default_command_live, autofix=True):
-    try:
-        return run(f'"{git}" -C "{dir}" {command}', desc=desc, errdesc=errdesc, custom_env=custom_env, live=live)
-    except RuntimeError:
-        if not autofix:
-            raise
-
-    print(f"{errdesc}, attempting autofix...")
-    #git_fix_workspace(dir, name)
-
-    return run(f'"{git}" -C "{dir}" {command}', desc=desc, errdesc=errdesc, custom_env=custom_env, live=live)
 
 def git_clone(url, dir, name, commithash=None):
     # TODO clone into temporary dir and move if successful
@@ -130,7 +98,7 @@ def git_clone(url, dir, name, commithash=None):
 
         run_git(dir, name, 'fetch', f"Fetching updates for {name}...", f"Couldn't fetch {name}", autofix=False)
 
-        #run_git(dir, name, f'checkout {commithash}', f"Checking out commit for {name} with hash: {commithash}...", f"Couldn't checkout commit {commithash} for {name}", live=True)
+        run_git(dir, name, f'checkout {commithash}', f"Checking out commit for {name} with hash: {commithash}...", f"Couldn't checkout commit {commithash} for {name}", live=True)
 
         return
 
@@ -199,9 +167,9 @@ def run_extensions_installers(settings_file):
 
 
 def prepare_environment():
-    torch_command = os.environ.get('TORCH_COMMAND', "pip install torch==2.1.2 torchvision==0.16.2 --extra-index-url https://download.pytorch.org/whl/cu121")
+    torch_command = os.environ.get('TORCH_COMMAND', "pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113")
     #requirements_file = os.environ.get('REQS_FILE', "requirements_versions.txt")
-    requirements_file = '/home/user/app/stable-diffusion-webui/requirements_versions.txt'
+    requirements_file = '/content/stable-diffusion-webui/requirements_versions.txt'
     commandline_args = os.environ.get('COMMANDLINE_ARGS', "")
 
     gfpgan_package = os.environ.get('GFPGAN_PACKAGE', "git+https://github.com/TencentARC/GFPGAN.git@8d2447a2d918f8eba5a4a01463fd48e45126a379")
